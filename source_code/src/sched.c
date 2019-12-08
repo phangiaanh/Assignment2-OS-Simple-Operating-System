@@ -26,7 +26,6 @@ struct pcb_t * get_proc(void) {
 	 * */
 	pthread_mutex_lock(&queue_lock);
 	if (empty(&ready_queue)) {
-		// move all process is waiting in run_queue back to ready_queue
 		while (!empty(&run_queue)) {
 			enqueue(&ready_queue, dequeue(&run_queue));
 		}
