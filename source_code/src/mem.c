@@ -118,6 +118,7 @@ addr_t alloc_mem(uint32_t size, struct pcb_t * proc) {
 	int free_mem_stat = 0;
 	for (i = 0; i < NUM_PAGES; i++){
 		if (_mem_stat[i].proc == 0) free_mem_stat++;
+		if (free_mem_stat == num_pages) break;
 	}
 
 	if (((RAM_SIZE - proc->bp) >= num_pages * PAGE_SIZE) && (free_mem_stat >= num_pages)) mem_avail = 1;
@@ -133,6 +134,39 @@ addr_t alloc_mem(uint32_t size, struct pcb_t * proc) {
 		 * 	- Add entries to segment table page tables of [proc]
 		 * 	  to ensure accesses to allocated memory slot is
 		 * 	  valid. */
+		int virtual_page_index = 0;
+		int last_used_page = -712;
+		for (i = 0; i < NUM_PAGES; i++)
+		{
+			if (_mem_stat[i].proc != 0) continue;
+
+			_mem_stat[i].proc = proc->pid;
+			_mem_stat[i].index = virtual_page_index;
+
+			if (last_used_page >= 0) _mem_stat[last_used_page].next = i;
+			last_used_page = i;
+
+			addr_t virtual_address = ret_mem + (virtual_page_index++) * PAGE_SIZE;
+			addr_t virtual_segment = get_first_lv(virtual_address);
+
+			struct page_table_t * virtual_page_table = get_page_table(virtual_segment, proc->seg_table);
+
+			if (virtual_page_table == NULL){
+				proc->seg_table->table[proc->seg_table->size].v_index = virtual_segment;
+				virtual_page_table = proc->seg_table->table[proc->seg_table->size++].pages = (struct page_table_t*) malloc(sizeof(struct page_table_t));	
+			}
+
+			int index = virtual_page_table->size++;
+			virtual_page_table->table[index].v_index = get_second_lv(virtual_address);
+			virtual_page_table->table[index].p_index = i;
+
+			if (virtual_page_index == num_pages){
+				_mem_stat[i].next = -1;
+				break;
+			}
+			
+		}
+		
 		
 	}
 	pthread_mutex_unlock(&mem_lock);
