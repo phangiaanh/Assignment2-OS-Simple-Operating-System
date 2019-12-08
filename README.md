@@ -30,7 +30,7 @@ make mem
 make test_mem
 ```
 ### Deadlines
-The deadline to complete Scheduler and Virtual Memory will be at 8 p.m Sunday, 12/8/2019
+The deadline to complete Scheduler and Virtual Memory will be at 11h59 p.m Sunday, 12/8/2019
 ## Contributors
 Students in the Computer Science and Engineering Department:
 <br />Bui Ba Anh 
