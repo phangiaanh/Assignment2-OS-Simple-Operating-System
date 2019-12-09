@@ -238,7 +238,7 @@ int free_mem(addr_t address, struct pcb_t * proc) {
 			addr_t last_segment = get_first_lv(last_addr);
 			addr_t last_page = get_second_lv(last_addr);
 			struct page_table_t * page_table = get_page_table(last_segment, proc->seg_table);
-			if (page_table == NULL) return;
+			if (page_table == NULL) break;
 			while (last_page >= 0) {
 				int i;
 				for (i = 0; i < page_table->size; i++) {
