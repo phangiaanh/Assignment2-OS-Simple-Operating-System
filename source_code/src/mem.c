@@ -153,7 +153,8 @@ addr_t alloc_mem(uint32_t size, struct pcb_t * proc) {
 
 			if (virtual_page_table == NULL){
 				proc->seg_table->table[proc->seg_table->size].v_index = virtual_segment;
-				virtual_page_table = proc->seg_table->table[proc->seg_table->size++].pages = (struct page_table_t*) malloc(sizeof(struct page_table_t));	
+				virtual_page_table = proc->seg_table->table[proc->seg_table->size].pages = (struct page_table_t*) malloc(sizeof(struct page_table_t));	
+				proc->seg_table->size++;
 			}
 
 			int index = virtual_page_table->size++;
@@ -182,6 +183,79 @@ int free_mem(addr_t address, struct pcb_t * proc) {
 	 * 	  the process [proc].
 	 * 	- Remember to use lock to protect the memory from other
 	 * 	  processes.  */
+	pthread_mutex_lock(&mem_lock);
+	addr_t virtual_address_begin = address;
+	addr_t physical_address = 0;
+
+	if(translate(virtual_address_begin, &physical_address, proc) == 0) return 1;
+
+	int free_pages = 0;
+	addr_t physical_segment_index = physical_address >> OFFSET_LEN;
+
+	int i = physical_segment_index;
+	while (i != -1)
+	{
+		free_pages++;
+		_mem_stat[i].proc = 0;
+		i = _mem_stat[i].next;
+	}
+
+
+
+	for (int i = 0; i < free_pages; i++){
+		addr_t v_address = virtual_address_begin + i * PAGE_SIZE;
+		addr_t v_segment = get_first_lv(v_address);
+		addr_t v_page = get_second_lv(v_address);
+		struct page_table_t * page_table = get_page_table(v_segment, proc->seg_table);
+		if (page_table == NULL) continue;
+
+		for (int j = 0; j < page_table->size; j++){
+			if (page_table->table[j].v_index == v_page){
+				int last = --page_table->size;
+				page_table->table[j] = page_table->table[last];
+				break;
+			}
+		}
+		
+		if (page_table->size == 0){
+			if (proc->seg_table == NULL) return 0;
+			for (int i = 0; i < proc->seg_table->size; i++) {
+				if (proc->seg_table->table[i].v_index == v_segment) {
+					int idx = proc->seg_table->size-1;
+					proc->seg_table->table[i] = proc->seg_table->table[idx];
+					proc->seg_table->table[idx].v_index = 0;
+					free(proc->seg_table->table[idx].pages);
+					proc->seg_table->size--;
+					break;
+				}
+			}
+		}		
+	}
+
+	if (virtual_address_begin + free_pages * PAGE_SIZE == proc->bp){
+		while (proc->bp >= PAGE_SIZE) {
+			addr_t last_addr = proc->bp - PAGE_SIZE;
+			addr_t last_segment = get_first_lv(last_addr);
+			addr_t last_page = get_second_lv(last_addr);
+			struct page_table_t * page_table = get_page_table(last_segment, proc->seg_table);
+			if (page_table == NULL) return;
+			while (last_page >= 0) {
+				int i;
+				for (i = 0; i < page_table->size; i++) {
+					if (page_table->table[i].v_index == last_page) {
+						proc->bp -= PAGE_SIZE;
+						last_page--;
+						break;
+					}
+				}
+				if (i == page_table->size) break;
+			}
+			if (last_page >= 0) break;
+		}
+	}
+	
+	
+	pthread_mutex_unlock(&mem_lock);
 	return 0;
 }
 
