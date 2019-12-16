@@ -13,13 +13,10 @@
 #define NUM_PAGES	(1 << (ADDRESS_SIZE - OFFSET_LEN))
 #define PAGE_SIZE	(1 << OFFSET_LEN)
 
-#define true			1
-#define false			0
-#define flush			fflush(stdout)
-#define min(a, b)		((a) < (b) ? (a) : (b))
-#define max(a, b)		((a) > (b) ? (a) : (b))
 
-#define LOG_MEM			0
+
+
+
 
 typedef char BYTE;
 typedef uint32_t addr_t;

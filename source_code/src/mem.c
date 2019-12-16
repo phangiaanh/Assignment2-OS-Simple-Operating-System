@@ -111,7 +111,7 @@ static int translate(addr_t virtual_addr, addr_t * physical_addr, struct pcb_t *
 	
 	/* Search in the first level */
 	struct page_table_t * page_table = get_page_table(first_lv, proc->seg_table);
-	if (page_table == NULL) return false;
+	if (page_table == NULL) return 0;
 	int i;
 	for (i = 0; i < page_table->size; i++) {
 		if (page_table->table[i].v_index == second_lv) {
@@ -123,10 +123,10 @@ static int translate(addr_t virtual_addr, addr_t * physical_addr, struct pcb_t *
 			 */
 			addr_t p_index = page_table->table[i].p_index; // physical page index
 			* physical_addr = (p_index << OFFSET_LEN) | (offset);
-			return true;
+			return 1;
 		}
 	}
-	return false;
+	return 0;
 }
 
 int memmory_available_to_allocate(int num_pages, struct pcb_t * proc) {
@@ -147,12 +147,12 @@ int memmory_available_to_allocate(int num_pages, struct pcb_t * proc) {
 			if (++cnt_pages == num_pages) break;
 		}
 	}
-	if (cnt_pages < num_pages) return false;
+	if (cnt_pages < num_pages) return 0;
 
 	// Check virtual space
-	if (proc->bp + num_pages*PAGE_SIZE >= RAM_SIZE) return false;
+	if (proc->bp + num_pages*PAGE_SIZE >= RAM_SIZE) return 0;
 
-	return true;
+	return 1;
 }
 
 void allocate_memory_available(int ret_mem, int num_pages, struct pcb_t * proc) {
@@ -225,11 +225,7 @@ addr_t alloc_mem(uint32_t size, struct pcb_t * proc) {
 		allocate_memory_available(ret_mem, num_pages, proc);
 	}
 
-	//if (LOG_MEM) {
-	//	puts("============  Allocation  ============");
-	//	dump();
-	//}
-
+	
 	pthread_mutex_unlock(&mem_lock);
 	return ret_mem;
 }
@@ -312,10 +308,7 @@ int free_mem(addr_t address, struct pcb_t * proc) {
 		free_mem_break_point(proc);
 	}
 
-	//if (LOG_MEM) {
-	//	puts("============  Deallocation  ============");
-	//	dump();
-	//}
+	
 
 	pthread_mutex_unlock(&mem_lock);
 	return 0;
