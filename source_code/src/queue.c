@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "queue.h"
 
+
 int empty(struct queue_t * q) {
 	return (q->size == 0);
 }
@@ -66,4 +67,5 @@ struct pcb_t * dequeue(struct queue_t * q) {
 	
 	return ret; 
 }
+
 
